@@ -16,20 +16,18 @@
 基于akshare模块开发的VeighNa数据服务接口,支持以下中国金融市场的K线数据:
 
 * **股票**:
-  * SSE: 上海证券交易所
-  * SZSE: 深圳证券交易所
-  * BSE: 北京证券交易所
+  * SSE:上海证券交易所
+  * SZSE:深圳证券交易所
+  * BSE:北京证券交易所
 
 * **期货**:
-  * CFFEX: 中国金融期货交易所
-  * SHFE: 上海期货交易所
-  * DCE: 大连商品交易所
-  * CZCE: 郑州商品交易所
-  * INE: 上海国际能源交易中心
+  * CFFEX:中国金融期货交易所
+  * SHFE:上海期货交易所
+  * DCE:大连商品交易所
+  * CZCE:郑州商品交易所
+  * INE:上海国际能源交易中心
 
-**数据周期**: 日线、分钟线(1/5/15/30/60分钟)
-
-注意: AkShare是免费开源的金融数据接口包,无需注册即可使用。
+注意:需要使用相应的数据服务权限,AkShare是免费开源的金融数据接口包。
 
 ## 安装
 
@@ -37,19 +35,19 @@
 
 直接使用pip命令:
 
-```bash
+```
 pip install vnpy_akshare
 ```
 
 或者下载源代码后,解压后在cmd中运行:
 
-```bash
+```
 pip install .
 ```
 
 ## 使用
 
-在VeighNa中使用AkShare时,需要在全局配置中填写以下字段信息:
+在VeighNa Trader的全局配置中填写以下字段信息:
 
 |名称|含义|必填|举例|
 |---------|----|---|---|
@@ -57,55 +55,37 @@ pip install .
 |datafeed.username|用户名|否|-|
 |datafeed.password|密码|否|-|
 
-配置示例(`setting.json`):
+## 脚本使用
 
-```json
-{
-    "datafeed.name": "akshare",
-    "datafeed.username": "",
-    "datafeed.password": ""
-}
+### 加载脚本
+
+在脚本中加载所需的包和数据结构
+
+```python
+from datetime import datetime
+from vnpy.trader.constant import Exchange, Interval
+from vnpy.trader.datafeed import get_datafeed
+from vnpy.trader.object import HistoryRequest
+
+# 获取数据服务实例
+datafeed = get_datafeed()
 ```
 
-## 功能特性
+### 获取K线历史数据
 
-* ✅ 支持A股历史K线数据获取(日线和分钟线)
-* ✅ 支持期货历史K线数据获取(日线和分钟线)
-* ✅ 自动处理股票代码格式转换
-* ✅ 支持复权数据(前复权、后复权)
-* ✅ 内置数据缓存机制,减少重复请求
-* ✅ 完善的异常处理和日志输出
+```python
+# 创建历史数据请求
+req = HistoryRequest(
+    symbol="600519",
+    exchange=Exchange.SSE,
+    start=datetime(2023, 1, 1),
+    end=datetime(2023, 12, 31),
+    interval=Interval.DAILY
+)
 
-## 依赖
-
-* vnpy >= 3.0.0
-* akshare >= 1.12.0
-* pandas >= 1.5.0
-
-## 注意事项
-
-1. AkShare数据来源于网络爬虫,稳定性受目标网站影响
-2. 建议合理控制请求频率,避免触发反爬机制
-3. 期货夜盘数据处理:第一条夜盘K线为集合竞价数据,可根据需求过滤或合并
-4. 数据更新可能存在延迟,请以实际返回为准
-
-## 开发说明
-
-### 目录结构
-
+# 查询数据
+bars = datafeed.query_bar_history(req)
 ```
-vnpy_akshare/
-├── __init__.py              # 包初始化文件
-├── akshare_datafeed.py      # 核心数据接口实现
-└── setup.py                 # 安装配置文件
-```
-
-### 主要类说明
-
-* `AkShareDatafeed`: 继承自`BaseDatafeed`,实现VeighNa标准数据接口
-  * `init()`: 初始化数据服务连接
-  * `query_bar_history()`: 查询K线历史数据
-  * `query_tick_history()`: 查询Tick历史数据(暂未实现)
 
 ## 许可证
 
