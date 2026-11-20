@@ -241,7 +241,7 @@ class AkShareDatafeed(BaseDatafeed):
         获取股票历史数据
         
         Args:
-            symbol: AkShare格式的合约代码
+            symbol: AkShare格式的合约代码(如"600519.SH")
             interval: K线周期
             start: 开始时间
             end: 结束时间
@@ -255,10 +255,13 @@ class AkShareDatafeed(BaseDatafeed):
             start_date: str = start.strftime("%Y%m%d")
             end_date: str = end.strftime("%Y%m%d")
             
+            # 去除交易所后缀,AkShare只需要纯数字代码
+            ak_code: str = symbol.replace(".", "")
+            
             if interval == Interval.DAILY:
                 # 日线数据
                 df: DataFrame = ak.stock_zh_a_hist(
-                    symbol=symbol.replace(".", ""),
+                    symbol=ak_code,
                     period="daily",
                     start_date=start_date,
                     end_date=end_date,
@@ -297,11 +300,16 @@ class AkShareDatafeed(BaseDatafeed):
                 
                 # 注意: AkShare的股票分钟线数据接口可能有限制
                 # 这里使用通用的分钟线接口
-                df: DataFrame = ak.stock_zh_a_minute(
-                    symbol=symbol.replace(".", ""),
-                    period=period,
-                    adjust=""
-                )
+                try:
+                    df: DataFrame = ak.stock_zh_a_minute(
+                        symbol=ak_code,
+                        period=period,
+                        adjust=""
+                    )
+                except Exception as e:
+                    output(f"股票分钟线数据获取失败: {e}")
+                    output("提示: AkShare股票分钟线接口可能不稳定,建议使用日线数据")
+                    return None
                 
                 if not df.empty:
                     df.rename(columns={
@@ -336,7 +344,7 @@ class AkShareDatafeed(BaseDatafeed):
         获取期货历史数据
         
         Args:
-            symbol: AkShare格式的合约代码
+            symbol: AkShare格式的合约代码(如"rb2405")
             exchange: 交易所
             interval: K线周期
             start: 开始时间
@@ -347,34 +355,36 @@ class AkShareDatafeed(BaseDatafeed):
             原始数据DataFrame
         """
         try:
-            # 转换日期格式
-            start_date: str = start.strftime("%Y-%m-%d")
-            end_date: str = end.strftime("%Y-%m-%d")
-            
             if interval == Interval.DAILY:
-                # 期货日线数据
-                df: DataFrame = ak.futures_zh_daily_sina(
-                    symbol=symbol
-                )
+                # 期货日线数据 - 使用新浪财经接口
+                try:
+                    df: DataFrame = ak.futures_zh_daily_sina(symbol=symbol)
+                except Exception as e:
+                    output(f"期货日线数据获取失败: {e}")
+                    output("尝试使用其他数据源...")
+                    return None
                 
-                if not df.empty:
-                    # 筛选日期范围
-                    df["date"] = pd.to_datetime(df["date"])
-                    mask = (df["date"] >= start) & (df["date"] <= end)
-                    df = df.loc[mask].copy()
-                    
-                    df.rename(columns={
-                        "date": "datetime",
-                        "open": "open",
-                        "high": "high",
-                        "low": "low",
-                        "close": "close",
-                        "volume": "volume",
-                        "hold": "open_interest"
-                    }, inplace=True)
-                    
-                    df.sort_values("datetime", inplace=True)
-                    df.reset_index(drop=True, inplace=True)
+                if df is None or df.empty:
+                    output(f"期货日线数据为空: {symbol}")
+                    return None
+                
+                # 筛选日期范围
+                df["date"] = pd.to_datetime(df["date"])
+                mask = (df["date"] >= start) & (df["date"] <= end)
+                df = df.loc[mask].copy()
+                
+                df.rename(columns={
+                    "date": "datetime",
+                    "open": "open",
+                    "high": "high",
+                    "low": "low",
+                    "close": "close",
+                    "volume": "volume",
+                    "hold": "open_interest"
+                }, inplace=True)
+                
+                df.sort_values("datetime", inplace=True)
+                df.reset_index(drop=True, inplace=True)
                 
                 return df
                 
@@ -388,27 +398,35 @@ class AkShareDatafeed(BaseDatafeed):
                 period: str = period_map.get(interval, "1")
                 
                 # 期货分钟线数据
-                df: DataFrame = ak.futures_zh_minute_sina(
-                    symbol=symbol,
-                    period=period
-                )
+                try:
+                    df: DataFrame = ak.futures_zh_minute_sina(
+                        symbol=symbol,
+                        period=period
+                    )
+                except Exception as e:
+                    output(f"期货分钟线数据获取失败: {e}")
+                    output("提示: 期货分钟线数据可能需要较新的AkShare版本")
+                    return None
                 
-                if not df.empty:
-                    # 筛选日期范围
-                    df["datetime"] = pd.to_datetime(df["datetime"])
-                    mask = (df["datetime"] >= start) & (df["datetime"] <= end)
-                    df = df.loc[mask].copy()
-                    
-                    df.rename(columns={
-                        "open": "open",
-                        "high": "high",
-                        "low": "low",
-                        "close": "close",
-                        "volume": "volume"
-                    }, inplace=True)
-                    
-                    df.sort_values("datetime", inplace=True)
-                    df.reset_index(drop=True, inplace=True)
+                if df is None or df.empty:
+                    output(f"期货分钟线数据为空: {symbol}")
+                    return None
+                
+                # 筛选日期范围
+                df["datetime"] = pd.to_datetime(df["datetime"])
+                mask = (df["datetime"] >= start) & (df["datetime"] <= end)
+                df = df.loc[mask].copy()
+                
+                df.rename(columns={
+                    "open": "open",
+                    "high": "high",
+                    "low": "low",
+                    "close": "close",
+                    "volume": "volume"
+                }, inplace=True)
+                
+                df.sort_values("datetime", inplace=True)
+                df.reset_index(drop=True, inplace=True)
                 
                 return df
                 

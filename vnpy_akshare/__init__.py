@@ -10,4 +10,4 @@ from .akshare_datafeed import AkShareDatafeed as Datafeed
 try:
     __version__ = importlib_metadata.version("vnpy_akshare")
 except importlib_metadata.PackageNotFoundError:
-    __version__ = "dev"
+    __version__ = "1.0.0.dev0"

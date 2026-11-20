@@ -54,6 +54,22 @@ pip install .
 |datafeed.username|用户名|否|-|
 |datafeed.password|密码|否|-|
 
+**重要提示**: 安装后需要修改VeighNa配置才能使用akshare数据源。详见 [VEIGHNA_SETUP.md](VEIGHNA_SETUP.md)
+
+### 快速配置
+
+找到VeighNa配置文件 `vt_setting.json` (通常位于 `~/.vntrader/`),修改:
+
+```json
+{
+    "datafeed.name": "akshare",
+    "datafeed.username": "",
+    "datafeed.password": ""
+}
+```
+
+然后重启VeighNa Trader即可。
+
 
 # 单元测试
 

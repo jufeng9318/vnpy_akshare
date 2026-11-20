@@ -24,6 +24,7 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
     "akshare>=1.12.0",
+    "importlib-metadata",
 ]
 keywords = ["quant", "quantitative", "investment", "trading", "algotrading"]
 
